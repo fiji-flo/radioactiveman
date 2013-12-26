@@ -1,26 +1,38 @@
 var field;
 var controller;
+var frame;
+
 
 function mainLoop() {
-    players[0].updatePos();
+    frame =  (frame + 1) % FRAME_MOD;
+    for (var i = 0; i < players.length; i++) {
+        players[i].updatePos();
+    }
     field.clear();
-    players[0].draw(field);
+    for (var i = 0; i < players.length; i++) {
+        players[i].draw(field);
+    }
 }
 
 function initField() {
+    frame = 0;
     field = new Field("field");
-    controller = new Controller();
-    var loc = new Loc(50,50);
-    var i = players.push(new Man("Player1", loc, 'rgb(200,0,0)'));
-    console.log(i);
-    players[i-1].draw(field);
+    var keymap1 = new Keymap(37, 38, 39, 40, 32);
+    var keymap2 = new Keymap(65, 87, 68, 83, 16);
+    var i = players.push(new Man("Player1", new Loc(50,50), 'rgb(200,0,0)', keymap1));
+    var i = players.push(new Man("Player2", new Loc(100,100), 'rgb(0,0,200)', keymap2));
     document.onkeydown = function (evt) {
-        controller.do(evt.which || evt.keyCode, true);
+        console.log(evt.keyCode);
+        for (var j = 0; j < players.length; j++) {
+            players[j].controller.do(evt.which || evt.keyCode, true);
+        }
     };
     document.onkeyup = function (evt) {
-        controller.do(evt.which || evt.keyCode, false);
+        for (var j = 0; j < players.length; j++) {
+            players[j].controller.do(evt.which || evt.keyCode, false);
+        }
     };
-    setInterval(mainLoop, 16.67);
+    setInterval(mainLoop, 100);
 }
 
 window.onload = initField;

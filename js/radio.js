@@ -2,17 +2,17 @@
  * @author fiji
  */
 
+var FRAME_MOD = 10000;
 var BG_COLOR = "rgb(255,255,255)";
 var BLOCK_SIZE = 20;
+var BOMB_SIZE = 10;
+var BOMB_TICKS = 40;
 var STEP = 4;
-var keymap = {};
-keymap.left = 37;
-keymap.up = 38;
-keymap.right = 39;
-keymap.down = 40;
-
 var players = [];
-var pressedKeys = {};
+
+function frameTime(t) {
+    return t % FRAME_MOD;
+}
 
 /** @constructor */
 function Loc(x, y) {
@@ -20,8 +20,19 @@ function Loc(x, y) {
     this.y = y;
 }
 
+
 /** @constructor */
-function Controller() {
+function Keymap(left, up, right, down, fire) {
+    this.left = left;
+    this.up = up;
+    this.right = right;
+    this.down = down;
+    this.fire = fire;
+}
+
+/** @constructor */
+function Controller(keymap) {
+    this.keymap = keymap;
     this.up = false;
     this.down = false;
     this.left = false;
@@ -32,17 +43,20 @@ function Controller() {
 
 Controller.prototype.do = function(keyCode, pressed) {
     switch (keyCode) {
-        case keymap.left:
+        case this.keymap.left:
             this.left = pressed;
             break;
-        case keymap.right:
+        case this.keymap.right:
             this.right = pressed;
             break;
-        case keymap.up:
+        case this.keymap.up:
             this.up = pressed;
             break;
-        case keymap.down:
+        case this.keymap.down:
             this.down = pressed;
+            break;
+        case this.keymap.fire:
+            this.fire = pressed;
             break;
     }
 };
@@ -59,56 +73,60 @@ Field.prototype.clear = function () {
 };
 
 /** @constructor */
-function Man(name, loc, color) {
+function Man(name, loc, color, keymap) {
     this.name = name;
     this.loc = loc;
     this.color = color;
     this.size = BLOCK_SIZE;
+    this.controller = new Controller(keymap);
+    this.bombs = [];
+    this.maxBombs = 4;
+    this.bombRadius = 2;
 }
 
 Man.prototype.draw = function () {
     field.ctx.fillStyle = this.color;
     field.ctx.fillRect(this.loc.x, this.loc.y, this.size, this.size);
+    for (var i = 0; i < this.bombs.length; i++) {
+        if (this.bombs[i].explodeFrame == frame) {
+            this.bombs[i].exploding = true;
+        }
+        if (this.bombs[i].exploding) {
+            field.ctx.fillRect(this.bombs[i].loc.x - this.bombs[i].radius * BLOCK_SIZE, this.bombs[i].loc.y, BLOCK_SIZE * (2 * this.bombs[i].radius + 1), BLOCK_SIZE);
+            field.ctx.fillRect(this.bombs[i].loc.x, this.bombs[i].loc.y - this.bombs[i].radius * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE * (2 * this.bombs[i].radius + 1));
+        }
+        field.ctx.fillRect(this.bombs[i].loc.x, this.bombs[i].loc.y, BOMB_SIZE, BOMB_SIZE);
+    }
 };
 
 Man.prototype.updatePos = function () {
-    if (controller.up) {
+    if (this.controller.up) {
         this.loc.y -= STEP;
     }    
-    if (controller.down) {
+    if (this.controller.down) {
         this.loc.y += STEP;
     }
-    if (controller.left) {
+    if (this.controller.left) {
         this.loc.x -= STEP;
     }
-    if (controller.right) {
+    if (this.controller.right) {
         this.loc.x += STEP;
+    }
+    if (this.controller.fire) {
+        this.deployBomb();
     }
 };
 
-
-function handleKey(evt) {
-    if (players.length > 0) {
-        var moved = false;
-        if (evt.keyCode == keymap.right) {
-            moved = true;
-            players[0].moveRight();
-        }
-        if (evt.keyCode == keymap.left) {
-            moved = true;
-            players[0].moveLeft();
-        }
-        if (evt.keyCode == keymap.up) {
-            moved = true;
-            players[0].moveUp();
-        }
-        if (evt.keyCode == keymap.down) {
-            moved = true;
-            players[0].moveDown();
-        }
-        if (moved) {
-            field.clear();
-            players[0].draw();
-        }
+Man.prototype.deployBomb = function() {
+    if (this.bombs.length < this.maxBombs) {
+        this.bombs.push(new Bomb(this.bombRadius, new Loc(this.loc.x, this.loc.y)));
     }
+};
+
+/** @constructor */
+function Bomb(radius, loc) {
+    this.loc = loc;
+    this.radius = radius;
+    this.explodeFrame = frameTime(frame + BOMB_TICKS);
+    this.exploding = false;
 }
