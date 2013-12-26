@@ -5,13 +5,14 @@
 var BG_COLOR = "rgb(255,255,255)";
 var BLOCK_SIZE = 20;
 var STEP = 4;
-var arrows = {};
-arrows.left = 37;
-arrows.up = 38;
-arrows.right = 39;
-arrows.down = 40;
+var keymap = {};
+keymap.left = 37;
+keymap.up = 38;
+keymap.right = 39;
+keymap.down = 40;
 
 var players = [];
+var pressedKeys = {};
 
 /** @constructor */
 function Loc(x, y) {
@@ -19,6 +20,32 @@ function Loc(x, y) {
     this.y = y;
 }
 
+/** @constructor */
+function Controller() {
+    this.up = false;
+    this.down = false;
+    this.left = false;
+    this.right = false;
+    this.fire = false;
+    this.alt = false;
+}
+
+Controller.prototype.do = function(keyCode, pressed) {
+    switch (keyCode) {
+        case keymap.left:
+            this.left = pressed;
+            break;
+        case keymap.right:
+            this.right = pressed;
+            break;
+        case keymap.up:
+            this.up = pressed;
+            break;
+        case keymap.down:
+            this.down = pressed;
+            break;
+    }
+};
 
 /** @constructor */
 function Field(canvasId) {
@@ -44,35 +71,38 @@ Man.prototype.draw = function () {
     field.ctx.fillRect(this.loc.x, this.loc.y, this.size, this.size);
 };
 
-Man.prototype.moveRight = function () {
-    this.loc.x += STEP;
+Man.prototype.updatePos = function () {
+    if (controller.up) {
+        this.loc.y -= STEP;
+    }    
+    if (controller.down) {
+        this.loc.y += STEP;
+    }
+    if (controller.left) {
+        this.loc.x -= STEP;
+    }
+    if (controller.right) {
+        this.loc.x += STEP;
+    }
 };
-Man.prototype.moveLeft = function () {
-    this.loc.x -= STEP;
-};
-Man.prototype.moveUp = function () {
-    this.loc.y -= STEP;
-};
-Man.prototype.moveDown = function () {
-    this.loc.y += STEP;
-};
+
 
 function handleKey(evt) {
     if (players.length > 0) {
         var moved = false;
-        if (evt.keyCode == arrows.right) {
+        if (evt.keyCode == keymap.right) {
             moved = true;
             players[0].moveRight();
         }
-        if (evt.keyCode == arrows.left) {
+        if (evt.keyCode == keymap.left) {
             moved = true;
             players[0].moveLeft();
         }
-        if (evt.keyCode == arrows.up) {
+        if (evt.keyCode == keymap.up) {
             moved = true;
             players[0].moveUp();
         }
-        if (evt.keyCode == arrows.down) {
+        if (evt.keyCode == keymap.down) {
             moved = true;
             players[0].moveDown();
         }
